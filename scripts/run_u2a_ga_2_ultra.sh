@@ -1,0 +1,22 @@
+accelerate launch ../u2a_3.py \
+  --method "ga" \
+  --use_lora \
+  --max_unlearn_steps 100 \
+  --epochs 2 \
+  --max_steps 3 \
+  --es_threshold -0.5 \
+  --reg 1 \
+  --lamda 0.1 \
+  --beta 0 \
+  --pa_batch_size 4 \
+  --batch_size 1 \
+  --lr 1.15e-4 \
+  --weights_lr 1e-2 \
+  --max_bad_loss 1.7 \
+  --model_name "/root/autodl-tmp/models/llama2-baseline/ultrafeedback/negative-0.7/merge/original" \
+  --dataset "ultrafeedback" \
+  --forget_dataset_path "/root/autodl-tmp/codebase/LLaMA-Factory/data/ultrafeedback-forget/negative-0.7/forget-0.8/ultrafeedback_unlearning.json"\
+  --remain_dataset_path "/root/autodl-tmp/codebase/LLaMA-Factory/data/ultrafeedback-forget/negative-0.7/forget-0.8/ultrafeedback_remain.json" \
+  --pa_dataset_path "/root/autodl-tmp/codebase/LLaMA-Factory/data/ultrafeedback-forget/negative-0.7/forget-0.8/ultrafeedback_preference.json" \
+  --model_family llama2 \
+  --model_save_dir "/root/autodl-tmp/models/llama2-baseline/ultrafeedback/negative-0.7/merge/u2a-ga" \
