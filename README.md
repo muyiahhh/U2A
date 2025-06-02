@@ -1,4 +1,4 @@
-### Bridging the Gap Between Preference Alignment and Machine Unlearning
+### 环境配置
 
 ```
 conda create -n u2a python=3.10
