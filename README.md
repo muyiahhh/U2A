@@ -30,8 +30,8 @@ After downloading, run the following script to preprocess and split the data:
 python create_datasets.py
 ```
 
-This script processes the raw datasets and generates task-specific subsets, including `original`, `forget`, `remain`, and `test` splits. A dataset split diagram is provided below to illustrate the structure:
-(*Insert your visualized data split diagram here*)
+This script processes the raw datasets and generates task-specific subsets, including `PA`, `original`, `forget`, `remain`, and `test` splits. A dataset split diagram is provided below to illustrate the structure:
+![Dataset Split](./images/dataset_split.png)
 
 ---
 
@@ -61,10 +61,4 @@ These experiments are conducted on the `PKU-SafeRLHF` dataset using the LLaMA 3 
 
 ---
 
-### 5. Evaluation (Work in Progress)
-
-Evaluation will be performed on the trained models to measure alignment, generalization, and forgetting effects across the `forget`, `remain`, and `test` subsets. The evaluation scripts and metrics will be provided in future updates.
-
----
-
-If you'd like, I can also help you polish a `README.md` or write the "Quick Start" section. Let me know what format or additional content you need!
+### 5. Evaluation
