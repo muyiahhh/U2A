@@ -30,7 +30,7 @@ python create_datasets.py
 ```
 
 This script processes the raw datasets and generates task-specific subsets, including `PA`, `original`, `forget`, `remain`, and `test` splits. A dataset split diagram is provided below to illustrate the structure:
-![Dataset Split](./dataset_split.pdf)
+![Dataset Split](./dataset_split.png)
 
 ---
 
