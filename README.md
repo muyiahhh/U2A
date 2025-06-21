@@ -1,5 +1,4 @@
-### Bridging the Gap Between Preference Alignment and
-Machine Unlearning
+### Bridging the Gap Between Preference Alignment and Machine Unlearning
 
 This guide describes how to set up the environment, prepare datasets, fine-tune the original model, run the U2A method, and perform evaluation. The goal is to facilitate reproducible research and enable users to apply U2A to alignment tasks on large language models.
 
@@ -31,7 +30,7 @@ python create_datasets.py
 ```
 
 This script processes the raw datasets and generates task-specific subsets, including `PA`, `original`, `forget`, `remain`, and `test` splits. A dataset split diagram is provided below to illustrate the structure:
-![Dataset Split](./dataset_split.pdf)
+![Dataset Split](../../dataset_split.pdf)
 
 ---
 
