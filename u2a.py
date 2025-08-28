@@ -237,73 +237,94 @@ def optimize_inner(args, model, ref_model, forget_dataloader, pa_dataloader, acc
     end_time = time.time()
     logging.info("Total time: %d sec" % (end_time - start_time))
 
-def optimize_unlearning_weights(forget_idx, delta_omega, unlearning_weights, unlearning_weights_optimizer, unlearning_weights_lr_scheduler, accelerator, workspace_dir, logging, iter):
-    grad_mask = torch.zeros_like(unlearning_weights)
-    grad_mask[forget_idx] = 1
-    grad_mask = accelerator.prepare(grad_mask)
-    # with torch.no_grad():
-    unlearning_weights.grad = delta_omega * grad_mask
-    print("gradient before:", unlearning_weights.grad[forget_idx])
-    print("weights before:", unlearning_weights[forget_idx])
-    
-    print("lr", args.weights_lr)
+def optimize_unlearning_weights(
+    forget_idx,
+    delta_omega, 
+    unlearning_weights,  
+    unlearning_weights_optimizer,  
+    unlearning_weights_lr_scheduler,
+    accelerator,
+    workspace_dir,
+    logging,
+    iter
+):
 
-    print("lr*grad:")
 
+    device = unlearning_weights.device
+    s = len(forget_idx)  
+
+    # ===== Record step (support set only)）=====
     with torch.no_grad():
-        weights_before = unlearning_weights[forget_idx]
-        total_before = weights_before.sum().item()
+        w_before_s = unlearning_weights[forget_idx].detach().clone()
+        sum_before = float(w_before_s.sum().item())
 
-    # unlearning_weights_optimizer.step()
-    # unlearning_weights_lr_scheduler.step()
-    # unlearning_weights_optimizer.zero_grad()
-
+    # ===== Prepare gradients =====
     with torch.no_grad():
-        grad = unlearning_weights.grad.clone()
-        weights_before = unlearning_weights.clone()
+        grad_full = torch.zeros_like(unlearning_weights, device=device)
+        grad_full[forget_idx] = delta_omega[forget_idx]
+        grad_s = grad_full[forget_idx]  
 
-        selected_weights = weights_before[forget_idx]
-        selected_grads = grad[forget_idx]
+    eta = args.weights_lr
+    print("gradient before:", grad_s)
+    print("weights before:", w_before_s)
+    print("lr", eta)
 
-        eta = args.weights_lr
-        updated_weights = selected_weights * torch.exp(-eta * selected_grads)
+    # ===== Mirror descent w_new ∝ w_old * exp(-η * ∇g) =====
+    eps = 1e-20
+    with torch.no_grad():
+        w_old_s = unlearning_weights[forget_idx].clone()
 
-        # updated_weights = selected_weights * torch.exp(-selected_grads)
-        updated_weights = updated_weights / updated_weights.sum()
+        if (w_old_s <= 0).any():
+            w_old_s = torch.full_like(w_old_s, 1.0)
 
-        unlearning_weights[forget_idx] = updated_weights
-        unlearning_weights[forget_idx] *= len(forget_idx)
-        # unlearning_weights += args.weights_lr * unlearning_weights.grad
+        # 
+        logits = torch.log(w_old_s + eps) - eta * grad_s
+        logits = logits - torch.logsumexp(logits, dim=0)
+        p_s = torch.exp(logits)                 # sum=1
+        p_s = torch.clamp(p_s, min=1e-12)
+        p_s = p_s / p_s.sum()                
 
-    unlearning_weights_lr_scheduler.step()
-    print("lr", args.weights_lr)
-    
+        w_new_s = s * p_s                      
+
+        unlearning_weights.data.zero_()
+        unlearning_weights.data[forget_idx] = w_new_s
+
+        if unlearning_weights.grad is not None:
+            unlearning_weights.grad.detach_()
+            unlearning_weights.grad.zero_()
+
+    if unlearning_weights_lr_scheduler is not None:
+        unlearning_weights_lr_scheduler.step()
 
     print("weights after:", unlearning_weights[forget_idx])
 
+    # =====  JSON trace  =====
     with torch.no_grad():
-        weights_after = unlearning_weights[forget_idx]
-        weights_after = torch.clamp(weights_after, min=1e-6)
+        w_after_s = unlearning_weights[forget_idx].detach().clone()
+        w_after_s = torch.clamp(w_after_s, min=1e-12)
+        sum_after = float(w_after_s.sum().item())
 
-        # ===== JSON 输出 =====
         if workspace_dir is not None:
             weights_json = {}
-            for idx, w_before, w_after, omega in zip(
+            for idx, w_b, w_a, g_i in zip(
                 forget_idx.tolist(),
-                selected_weights.tolist(),
-                weights_after.tolist(),
-                delta_omega[forget_idx].tolist()
+                w_before_s.tolist(),
+                w_after_s.tolist(),
+                grad_s.tolist()
             ):
                 weights_json[int(idx)] = {
-                    "before": w_before,
-                    "after_step": w_after,
-                    "delta_omega": omega,
+                    "before": float(w_b),
+                    "after_step": float(w_a),
+                    "grad": float(g_i),
+                    "lr": float(eta)
                 }
+            weights_json["_sums_"] = {"before_sum": sum_before, "after_sum": sum_after, "target_sum": float(s)}
 
             json_path = f"{workspace_dir}/unlearning_weights_trace_iter{iter}.json"
             with open(json_path, "w") as f:
                 json.dump(weights_json, f, indent=4)
             logging.info(f"Saved unlearning weights trace to {json_path}")
+
 
 
 def main(args) -> None:
