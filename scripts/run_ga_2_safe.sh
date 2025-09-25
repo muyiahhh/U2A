@@ -22,7 +22,7 @@ accelerate launch ../ga.py \
   --normal_weight 1 \
   --batch_size 8 \
   --pa_batch_size 8 \
-  --lr 1.5e-5 \
+  --lr 4.25e-5 \
   --lamda 0.1 \
   --max_bad_loss 1.9 \
   --model_name "/root/autodl-tmp/models/llama2-baseline/saferlhf/negative-0.65/merge/original" \
